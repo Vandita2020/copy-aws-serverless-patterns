@@ -27,10 +27,13 @@ jobs:
   create-release:
     needs: get-release
     runs-on: ubuntu-latest
-    if: needs.get-release.outputs.latest_release == 'none'
+    if: needs.get-release.outputs.latest_release == ''
     steps:
+      - name: print latest release output
+        run: echo "Latest release ${{ needs.get-release.outputs.latest_release }}"
+
       - name: Checkout repository
-          uses: actions/checkout@v3
+        uses: actions/checkout@v3
 
       - name: Release doesn't exist so create one
         id: create_release
@@ -46,13 +49,16 @@ jobs:
           mkdir -p temp
           for folder in */; do
             if [ -d "$folder" ]; then
-              folder_name=$(basename)
+              folder_name=$(basename "$folder")
               zip -r "temp/${folder_name}.zip" "$folder_name"
             fi
           done
           echo "Zip files created"
     
       - name: upload files to the release
+        id: upload files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for file in temp/*.zip; do
             gh release upload v1.0.0 "$file" --clobber
@@ -66,7 +72,7 @@ jobs:
 
   update-release:
     needs: get-release
-    if: needs.get-release.outputs.latest_release != 'none'
+    if: needs.get-release.outputs.latest_release != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -77,7 +83,7 @@ jobs:
         run: |
           git fetch origin refs/tags/${{ env.latest_release }}:refs/tags/${{ env.latest_release }}
 
-      - name: Get changed files since latest release
+      - name: Get changed files since latest releases
         id: get_changes
         run: |
           if [ -n "${{ env.latest_release }}" ]; then
