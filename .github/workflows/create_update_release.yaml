@@ -49,7 +49,7 @@ jobs:
           mkdir -p temp
           for folder in */; do
             if [ -d "$folder" ]; then
-              folder_name=$(basename)
+              folder_name=$(basename "$folder")
               zip -r "temp/${folder_name}.zip" "$folder_name"
             fi
           done
