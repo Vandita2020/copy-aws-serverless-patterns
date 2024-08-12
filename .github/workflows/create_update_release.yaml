@@ -8,6 +8,8 @@ on:
 jobs:
   get-release:
     runs-on: ubuntu-latest
+    outputs: 
+      latest_release: ${{ steps.get_latest_release.outputs.latest_release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,73 +19,65 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest_release=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+          latest_release=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' || echo "none")
           echo "Latest release tag: $latest_release"
-          echo "latest_release=${latest_release}" >> $GITHUB_OUTPUT
           echo "latest_release=${latest_release}" >> $GITHUB_ENV
+        continue-on-error: true
 
-  create-release: 
+  create-release:
+    needs: get-release
     runs-on: ubuntu-latest
+    if: needs.get-release.outputs.latest_release == 'none'
     steps:
-      - if: always() && steps.get_latest_release.outputs.null
-        name: Folder to save temporary zip files of folders
-        id: create_temp_folder
-        run: |
-          mkdir temp
-          echo "Temp folder created"
-          find . -maxdepth 1 -mindepth 1 -type d -not -path "./temp" -exec zip -r ./temp/{}.zip {} \
-          echo "Zip files created"
-      
-      - if: always() && steps.get_latest_release.outputs.null
-        name: Release doesn't exist so create one
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Release doesn't exist so create one
         id: create_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create v1.0.0 --generate-notes --prerelease=false
           echo "Release created"
+      
+      - name: Zip files of folders
+        id: zip_folders
+        run: |
+          mkdir -p temp
+          for folder in */; do
+            if [ -d "$folder" ]; then
+              folder_name=$(basename)
+              zip -r "temp/${folder_name}.zip" "$folder_name"
+            fi
+          done
+          echo "Zip files created"
     
-      - if: always() && !steps.get_latest_release.outputs.null
-        name: Add files to the release
-        uses: actions/github-script@v7
-        id: add_files_to_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          script: |
-            RELEASE_TAG=${{ env.latest_release }}
-            ALL_FILES=$(ls temp)  
-            for FILE in $ALL_FILES; do
-              FULL_PATH="temp/$FILE"
-              if [ -f "$FULL_PATH" ]; then
-                gh release upload $RELEASE_TAG $FULL_PATH --clobber
-                echo "Uploaded $FULL_PATH, waiting to avoid rate limits..."
-                sleep 3  # Adjust sleep time as needed to handle rate limits
-              else
-                echo "File $FULL_PATH does not exist."
-              fi
+      - name: upload files to the release
+        run: |
+          for file in temp/*.zip; do
+            gh release upload v1.0.0 "$file" --clobber
+            echo "Uploaded $file, waiting to avoid rate limits..."
+            sleep 3  
+          done
+    
+      - name: clean up
+        run: |
+          rm -r temp
 
   update-release:
+    needs: get-release
+    if: needs.get-release.outputs.latest_release != 'none'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Get the latest release tag
-        id: get_latest_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          latest_release=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-          echo "Latest release tag: $latest_release"
-          echo "latest_release=${latest_release}" >> $GITHUB_ENV
 
       - name: Fetch the latest release tag from remote
         if: env.latest_release != ''
         run: |
           git fetch origin refs/tags/${{ env.latest_release }}:refs/tags/${{ env.latest_release }}
 
-      - name: Get changed files since latest release
+      - name: Get changed files since latest releases
         id: get_changes
         run: |
           if [ -n "${{ env.latest_release }}" ]; then
