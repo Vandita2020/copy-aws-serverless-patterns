@@ -90,10 +90,10 @@ jobs:
             git fetch origin refs/tags/${{ needs.get-release.outputs.latest_release }}:refs/tags/${{ needs.get-release.outputs.latest_release }}
             changed_files=$(git diff --name-only ${{ needs.get-release.outputs.latest_release }} HEAD)
             echo "Changed files: $changed_files"
-            echo "$changed_files" > changed.files.txt
+            echo "$changed_files" > changed_files.txt
           else
             echo "No latest release found"
-            echo "" > changed.files.txt
+            echo "" > changed_files.txt
           fi
         
       - name: Identify changed folders
