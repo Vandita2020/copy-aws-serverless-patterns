@@ -19,8 +19,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest_release=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' || echo "none")
-          echo "Latest release tag: $latest_release"
+          LATEST_RELEASE=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' || echo "none")
+          echo "Latest release tag: $LATEST_RELEASE"
+          echo "::set-output name=latest_release::$LATEST_RELEASE"
           echo "latest_release=${latest_release}" >> $GITHUB_ENV
         continue-on-error: true
 
@@ -72,16 +73,11 @@ jobs:
 
   update-release:
     needs: get-release
-    if: needs.get-release.outputs.latest_release != ''
     runs-on: ubuntu-latest
+    if: needs.get-release.outputs.latest_release != ''
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Fetch the latest release tag from remote
-        if: env.latest_release != ''
-        run: |
-          git fetch origin refs/tags/${{ env.latest_release }}:refs/tags/${{ env.latest_release }}
 
       - name: Get changed files since latest releases
         id: get_changes
