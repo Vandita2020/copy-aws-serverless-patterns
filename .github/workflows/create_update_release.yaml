@@ -78,11 +78,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Fetch the latest release tag from remote
-        run: |
-          git fetch origin refs/tags/${{ env.latest_release }}:refs/tags/${{ env.latest_release }}
-
+        
       - name: Generate file list
         id: generate_file_list
         run: |
