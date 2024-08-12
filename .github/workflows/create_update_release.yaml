@@ -56,6 +56,9 @@ jobs:
           echo "Zip files created"
     
       - name: upload files to the release
+        id: upload files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for file in temp/*.zip; do
             gh release upload v1.0.0 "$file" --clobber
