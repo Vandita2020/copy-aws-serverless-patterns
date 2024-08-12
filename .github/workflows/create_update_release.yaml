@@ -30,7 +30,7 @@ jobs:
     if: needs.get-release.outputs.latest_release == 'none'
     steps:
       - name: Checkout repository
-          uses: actions/checkout@v3
+        uses: actions/checkout@v3
 
       - name: Release doesn't exist so create one
         id: create_release
@@ -77,7 +77,7 @@ jobs:
         run: |
           git fetch origin refs/tags/${{ env.latest_release }}:refs/tags/${{ env.latest_release }}
 
-      - name: Get changed files since latest release
+      - name: Get changed files since latest releases
         id: get_changes
         run: |
           if [ -n "${{ env.latest_release }}" ]; then
