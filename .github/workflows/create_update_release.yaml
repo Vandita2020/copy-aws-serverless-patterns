@@ -155,6 +155,7 @@ jobs:
               gh release upload ${{ needs.get-release.outputs.latest_release }} "$archive" --clobber
               echo "Uploaded $archive, waiting to avoid rate limits..."
             else
-              echo "Archive $archive not found"
+              echo "No changed files"
+              echo "" > changed_folders.txt
             fi
           done < changed_folders.txt
