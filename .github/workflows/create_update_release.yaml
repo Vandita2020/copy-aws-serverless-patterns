@@ -108,17 +108,50 @@ jobs:
             echo "" > deleted_files.txt
           fi
       
-      - name: Delete files from the release
-        if: needs.get-release.output.latest_release != ''
+      - name: Get release assets
+        id: get_release_assets
+        env: 
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+        run: |
+          if [ -n "${{ needs.get-release.outputs.latest_release }}" ]; then
+            gh release view ${{ needs.get-release.outputs.latest_release }} --json assets --jq '.assets[] | "\(.name)"' > assets.txt
+            echo "Fetched assets"
+          else 
+            echo "No release found"
+          fi
+      
+      - name: Identify zip folders to delete
+        id: identify_zip_to_delete
+        run: |
+          if [ -s deleted_files.txt]; then
+            zip_to_delete=$(awk -F/ '{print $1}' deleted_files.txt | sort | uniq)
+            echo "Zip folders to delete: $zip_to_delete"
+            echo "$zip_to_delete" > zip_to_delete.txt
+          else
+            echo "No deleted files"
+            echo "" > zip_to_delete.txt
+          fi
+  
+      - name: Delete zip files 
+        if: ${{ always() }} && -s zip_to_delete.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          while IFS= read -r file; do
-            if [ -n "$file" ]; then
-              gh release delete-asset ${{ needs.get-release.outputs.latest_release }} "$file" || echo "failed to delete $file"
-              echo "Deleted $file"
+          while IFS= read -r zip_file; do
+            if [ -n "$zip_file" ]; then
+              asset_name=$(basename "$zip_file")
+              echo "Searching for asset: $asset_name"
+              asset_id=$(grep -F "$asset_name" assets.txt | awk '{print $2}')
+              if [ -n "$asset_id" ]; then
+                gh api -X DELETE "/repos/${{ github.repository }}/releases/assets/$asset_id"
+                echo "Deleted $file"
+              else
+                echo "No matching asset found for $file"
+                echo "Searhed for: $asset_name in assets.txt"
+                cat assets.txt
+              fi
             fi
-          done < deleted_files.txt
+          done < zip_to_delete.txt
         
       - name: Identify changed folders
         id: identify_folders
