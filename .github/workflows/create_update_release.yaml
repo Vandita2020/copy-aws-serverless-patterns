@@ -107,7 +107,7 @@ jobs:
             echo "No latest release found"
             echo "" > deleted_files.txt
           fi
-
+          
       - name: Get release assets
         id: get_release_assets
         env: 
@@ -127,7 +127,7 @@ jobs:
         run: |
           while IFS= read -r file; do
             if [ -n "$file" ]; then
-              asset_name=$(basename "$file")
+              asset_name=$(basename "$file.zip")
               echo "Searching for asset: $asset_name"
               asset_id=$(grep -F "$asset_name" assets.txt | awk '{print $2}')
               if [ -n "$asset_id" ]; then
