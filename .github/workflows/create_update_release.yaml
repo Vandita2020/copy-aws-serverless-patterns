@@ -104,7 +104,7 @@ jobs:
             echo "Deleted files: $deleted_files"
             echo "$deleted_files" > deleted_files.txt
           else
-            echo "No latest release found"
+            echo "No latest release founded"
             echo "" > deleted_files.txt
           fi
       
