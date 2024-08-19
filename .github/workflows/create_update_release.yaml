@@ -107,7 +107,7 @@ jobs:
             echo "No latest release found"
             echo "" > deleted_files.txt
           fi
-      
+
       - name: Get release assets
         id: get_release_assets
         env: 
@@ -176,6 +176,7 @@ jobs:
               gh release upload ${{ needs.get-release.outputs.latest_release }} "$archive" --clobber
               echo "Uploaded $archive, waiting to avoid rate limits..."
             else
-              echo "Archive $archive not found"
+              echo "No changed files"
+              echo "" > changed_folders.txt
             fi
           done < changed_folders.txt
