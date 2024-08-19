@@ -95,7 +95,7 @@ jobs:
             echo "No latest release found"
             echo "" > changed_files.txt
           fi
-      
+
       - name: Identify deleted files
         id: identify_deleted_files
         run: |
@@ -125,12 +125,11 @@ jobs:
         run: |
           if [ -s deleted_files.txt ]; then
             zip_to_delete=$(awk -F/ '{print $1".zip"}' deleted_files.txt | sort | uniq)
-            echo "Zip folders to delete: $zip_to_delete"
+            echo "Zip files to delete: $zip_to_delete"
             echo "$zip_to_delete" > zip_to_delete.txt
           else
-            echo "No deleted files"
+            echo "No files to delete"
             echo "" > zip_to_delete.txt
-          fi
   
       - name: Delete zip files 
         if: ${{ always() }} && -s zip_to_delete.txt
