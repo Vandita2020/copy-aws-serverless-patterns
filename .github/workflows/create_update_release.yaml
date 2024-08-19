@@ -95,7 +95,7 @@ jobs:
             echo "No latest release found"
             echo "" > changed_files.txt
           fi
-      
+          
       - name: Identify deleted files
         id: identify_deleted_files
         run: |
