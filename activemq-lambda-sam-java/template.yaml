@@ -11,7 +11,7 @@ Parameters:
   username:
     Type: String
     AllowedPattern: "^[a-zA-Z0-9_][a-zA-Z0-9_.@-]{1,98}[a-zA-Z0-9_@.-]$"
-    Description: Username for accessing ActiveMQ
+    Description: Usernames for accessing ActiveMQ
   password:
     Type: String
     AllowedPattern: "^(?=(.*\\p{Print}){4,})(?!.*[ ,:=])[\\p{Print}]{12,}$"
