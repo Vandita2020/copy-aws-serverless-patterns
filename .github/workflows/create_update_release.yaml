@@ -95,7 +95,7 @@ jobs:
             echo "No latest release found"
             echo "" > changed_files.txt
           fi
-          
+
       - name: Identify deleted files
         id: identify_deleted_files
         run: |
@@ -120,7 +120,7 @@ jobs:
             echo "No release found"
           fi
       
-      - name: Identify zip folders to delete
+      - name: Identify zip files to delete
         id: identify_zip_to_delete
         run: |
           if [ -s deleted_files.txt ]; then
@@ -130,7 +130,8 @@ jobs:
           else
             echo "No files to delete"
             echo "" > zip_to_delete.txt
-  
+          fi  
+          
       - name: Delete zip files 
         if: ${{ always() }} && -s zip_to_delete.txt
         env:
