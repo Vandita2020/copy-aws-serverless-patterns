@@ -120,24 +120,11 @@ jobs:
             echo "No release found"
           fi
       
-
-      - name: Get release assets
-        id: get_release_assets
-        env: 
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-        run: |
-          if [ -n "${{ needs.get-release.outputs.latest_release }}" ]; then
-            gh release view ${{ needs.get-release.outputs.latest_release }} --json assets --jq '.assets[] | "\(.name)"' > assets.txt
-            echo "Fetched assets"
-          else 
-            echo "No release found"
-          fi
-      
       - name: Identify zip folders to delete
         id: identify_zip_to_delete
         run: |
-          if [ -s deleted_files.txt ]; then
-            zip_to_delete=$(awk -F/ '{print $1".zip"}' deleted_files.txt | sort | uniq)
+          if [ -s deleted_files.txt]; then
+            zip_to_delete=$(awk -F/ '{print $1}' deleted_files.txt | sort | uniq)
             echo "Zip folders to delete: $zip_to_delete"
             echo "$zip_to_delete" > zip_to_delete.txt
           else
