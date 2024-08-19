@@ -95,7 +95,7 @@ jobs:
             echo "No latest release found"
             echo "" > changed_files.txt
           fi
-      
+
       - name: Identify deleted files
         id: identify_deleted_files
         run: |
@@ -120,38 +120,40 @@ jobs:
             echo "No release found"
           fi
       
-      - name: Identify zip folders to delete
+      - name: Identify zip files to delete
         id: identify_zip_to_delete
         run: |
           if [ -s deleted_files.txt ]; then
             zip_to_delete=$(awk -F/ '{print $1".zip"}' deleted_files.txt | sort | uniq)
-            echo "Zip folders to delete: $zip_to_delete"
+            echo "Zip files to delete: $zip_to_delete"
             echo "$zip_to_delete" > zip_to_delete.txt
           else
-            echo "No deleted files"
+            echo "No files to delete"
             echo "" > zip_to_delete.txt
-          fi
-  
-      - name: Delete zip files 
+          fi  
+        
+      - name: Delete zip files from the release
         if: ${{ always() }} && -s zip_to_delete.txt
-        env:
+        env: 
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           while IFS= read -r zip_file; do
             if [ -n "$zip_file" ]; then
               asset_name=$(basename "$zip_file")
               echo "Searching for asset: $asset_name"
-              asset_id=$(grep -F "$asset_name" assets.txt | awk '{print $2}')
+              
+              # Find the asset ID by matching the asset name exactly
+              asset_id=$(gh release view ${{ needs.get-release.outputs.latest_release }} --json assets --jq '.assets[] | select(.name == "'$asset_name'").id')
+              
               if [ -n "$asset_id" ]; then
                 gh api -X DELETE "/repos/${{ github.repository }}/releases/assets/$asset_id"
-                echo "Deleted $file"
+                echo "Deleted $zip_file with asset ID $asset_id"
               else
-                echo "No matching asset found for $file"
-                echo "Searhed for: $asset_name in assets.txt"
-                cat assets.txt
+                echo "No matching asset found for $zip_file"
               fi
             fi
           done < zip_to_delete.txt
+
         
       - name: Identify changed folders
         id: identify_folders
