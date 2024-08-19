@@ -107,7 +107,7 @@ jobs:
             echo "No latest release found"
             echo "" > deleted_files.txt
           fi
-          
+
       - name: Get release assets
         id: get_release_assets
         env: 
@@ -119,19 +119,31 @@ jobs:
           else 
             echo "No release found"
           fi
-
-      - name: Delete release assets
-        if: ${{ always() }} && -s deleted_files.txt
+      
+      - name: Identify zip folders to delete
+        id: identify_zip_to_delete
+        run: |
+          if [ -s deleted_files.txt]; then
+            zip_to_delete=$(awk -F/ '{print $1}' deleted_files.txt | sort | uniq)
+            echo "Zip folders to delete: $zip_to_delete"
+            echo "$zip_to_delete" > zip_to_delete.txt
+          else
+            echo "No deleted files"
+            echo "" > zip_to_delete.txt
+          fi
+  
+      - name: Delete zip files 
+        if: ${{ always() }} && -s zip_to_delete.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          while IFS= read -r file; do
-            if [ -n "$file" ]; then
-              asset_name=$(basename "$file.zip")
+          while IFS= read -r zip_file; do
+            if [ -n "$zip_file" ]; then
+              asset_name=$(basename "$zip_file")
               echo "Searching for asset: $asset_name"
               asset_id=$(grep -F "$asset_name" assets.txt | awk '{print $2}')
               if [ -n "$asset_id" ]; then
-                gh api -X DELETE "/repos/${{ github.repository }}/releases/tags/v1.0.0 | jq -r '.assets[] | [.name,.url] | @tsv"
+                gh api -X DELETE "/repos/${{ github.repository }}/releases/assets/$asset_id"
                 echo "Deleted $file"
               else
                 echo "No matching asset found for $file"
@@ -139,7 +151,7 @@ jobs:
                 cat assets.txt
               fi
             fi
-          done < deleted_files.txt
+          done < zip_to_delete.txt
         
       - name: Identify changed folders
         id: identify_folders
