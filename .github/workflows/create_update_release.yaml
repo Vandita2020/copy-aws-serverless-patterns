@@ -115,7 +115,7 @@ jobs:
         run: |
           while IFS= read -r file; do
             if [ -n "$file" ]; then
-              asset=$( gh release view ${{ needs.get-release.outputs.latest_release }} --json assets --jq '.assets[] | "\(.name) \(.id)"'
+              asset=$( gh release view ${{ needs.get-release.outputs.latest_release }} --json assets --jq '.assets[] | "\(.name) \(.id)"')
               asset_id=$(grep "$(basename "$file")" asset | awk '{print $2}')
               if [ -n "$asset_id" ]; then
                 gh api -X DELETE "/repos/${{ github.repository }}/releases/assets/$asset_id"
