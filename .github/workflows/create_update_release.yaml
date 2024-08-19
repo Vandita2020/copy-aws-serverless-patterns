@@ -108,6 +108,19 @@ jobs:
             echo "" > deleted_files.txt
           fi
       
+      - name: Get release asset
+        id: get_release_asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ needs.get-release.outputs.latest_release }}" ]; then
+            gh release view ${{ needs.get-release.outputs.latest_release }} --json assets --jq '.assets[] | "\(.name) \(.id)"' > assets.txt
+            echo "Fetched assets"
+          else
+            echo "No release found"
+          fi
+
+
       - name: Delete files from the release
         if: needs.get-release.output.latest_release != ''
         env:
@@ -115,8 +128,13 @@ jobs:
         run: |
           while IFS= read -r file; do
             if [ -n "$file" ]; then
-              gh release delete-asset ${{ needs.get-release.outputs.latest_release }} "$file" || echo "failed to delete $file"
-              echo "Deleted $file"
+              asset_id=$(grep "$file" assets.txt | awk '{print $2}')
+              if [ -n "$asset_id" ]; then
+                gh api -X DELETE "/repos/${{ github.repository }}/releases/assets/$asset_id"
+                echo "Deleted $file"
+              else
+                echo "No matching asset found for $file"
+              fi
             fi
           done < deleted_files.txt
         
